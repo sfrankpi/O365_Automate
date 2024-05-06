@@ -1,2 +1,3 @@
 # O365_Automate
- O365 Automate devlope Docs
+
+Office 365 auto-reply application.
