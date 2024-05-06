@@ -2,9 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -13,49 +14,26 @@ import (
 const clientID = "your_client_id"
 const clientSecret = "your_client_secret"
 const tenantID = "your_tenant_id"
+const csvFilePath = "auto_reply_messages.csv"
+
+type autoReplyMessage struct {
+	UserPrincipalName string
+	ExternalMessage   string
+	InternalMessage   string
+}
 
 // Function to get an access token
 func getAccessToken() (string, error) {
-	url := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
-	data := map[string]string{
-		"grant_type":    "client_credentials",
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-		"scope":         "https://graph.microsoft.com/.default",
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var respData map[string]interface{}
-	err = json.Unmarshal(body, &respData)
-	if err != nil {
-		return "", err
-	}
-
-	return respData["access_token"].(string), nil
+	// ... (same as previous example)
 }
 
 // Function to set the auto-reply message
-func setAutoReplyMessage(accessToken, message string) error {
-	url := "https://graph.microsoft.com/v1.0/me/mailboxSettings/automaticRepliesSetting"
+func setAutoReplyMessage(accessToken string, message *autoReplyMessage) error {
+	url := fmt.Sprintf("https://graph.microsoft.com/v1.0/%s/mailboxSettings/automaticRepliesSetting", message.UserPrincipalName)
 	data := map[string]interface{}{
 		"status":               "Scheduled",
-		"externalReplyMessage": message,
-		"internalReplyMessage": message,
+		"externalReplyMessage": message.ExternalMessage,
+		"internalReplyMessage": message.InternalMessage,
 	}
 
 	jsonData, err := json.Marshal(data)
@@ -91,12 +69,36 @@ func main() {
 		return
 	}
 
-	autoReplyMessage := "Thank you for your email. I am currently out of the office and will respond to your message as soon as possible."
-	err = setAutoReplyMessage(accessToken, autoReplyMessage)
+	file, err := os.Open(csvFilePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error setting auto-reply message: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error opening CSV file: %v\n", err)
 		return
 	}
+	defer file.Close()
 
-	fmt.Println("Auto-reply message set successfully!")
+	reader := csv.NewReader(file)
+	for {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading CSV file: %v\n", err)
+			return
+		}
+
+		message := &autoReplyMessage{
+			UserPrincipalName: row[0],
+			ExternalMessage:   row[1],
+			InternalMessage:   row[2],
+		}
+
+		err = setAutoReplyMessage(accessToken, message)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error setting auto-reply message for %s: %v\n", message.UserPrincipalName, err)
+			continue
+		}
+
+		fmt.Printf("Auto-reply message set successfully for %s\n", message.UserPrincipalName)
+	}
 }
