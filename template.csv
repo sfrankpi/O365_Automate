@@ -1,0 +1,3 @@
+user_principal_name,external_reply_message,internal_reply_message
+user1@example.com,"Thank you for your email. I am currently out of the office and will respond to your message as soon as possible.","Thank you for your email. I am currently out of the office and will respond to your message as soon as possible."
+user2@example.com,"I'm away from the office until [date]. I will respond to your message when I return.","I'm away from the office until [date]. I will respond to your message when I return."
