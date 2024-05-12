@@ -62,6 +62,12 @@ func setAutoReplyMessage(accessToken string, message *autoReplyMessage) error {
 	return nil
 }
 
+// main is the entry point of the program. It retrieves an access token,
+// opens a CSV file, reads the file line by line, sets auto-reply messages
+// for each user, and prints status messages.
+//
+// No parameters.
+// No return value.
 func main() {
 	accessToken, err := getAccessToken()
 	if err != nil {

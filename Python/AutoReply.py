@@ -38,6 +38,9 @@ def set_auto_reply_message(access_token, user_principal_name, external_message, 
     return response.json()
 
 def main():
+    """
+    A function to set auto-reply messages for each user based on the information provided in a CSV file.
+    """
     try:
         access_token = get_access_token()
 
